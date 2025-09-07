@@ -1,0 +1,40 @@
+"use client";
+import React from 'react';
+import api from '../lib/api';
+import { useToast } from '../components/ToastProvider';
+
+type User = { id: string; email: string } | null;
+
+export const AuthContext = React.createContext({
+  user: null as User,
+  token: null as string | null,
+  setAuth: (u: User, t?: string | null) => {},
+  logout: () => {},
+});
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const toast = useToast();
+  const [user, setUser] = React.useState<User>(() => {
+    try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; }
+  });
+  const [token, setToken] = React.useState<string | null>(() => localStorage.getItem('token'));
+
+  React.useEffect(() => {
+    if (user) localStorage.setItem('user', JSON.stringify(user));
+    else localStorage.removeItem('user');
+  }, [user]);
+
+  React.useEffect(() => {
+    if (token) localStorage.setItem('token', token);
+    else localStorage.removeItem('token');
+  }, [token]);
+
+  function setAuth(u: User, t?: string | null) { setUser(u); setToken(t || null); try { toast?.success({ title: 'Signed in', description: u?.email }); } catch(_){} }
+  function logout() { setUser(null); setToken(null); try { toast?.success({ title: 'Logged out' }); } catch(_){} }
+
+  return (
+    <AuthContext.Provider value={{ user, token, setAuth, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
