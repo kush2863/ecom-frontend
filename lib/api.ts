@@ -1,5 +1,4 @@
-/* Shared API helpers used by the frontend. Small, typed wrappers around fetch.
-   Uses NEXT_PUBLIC_API_URL if provided, otherwise calls relative paths. */
+
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || '';
 

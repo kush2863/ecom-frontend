@@ -16,12 +16,15 @@ export const CartContext = React.createContext({
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const { token } = React.useContext(AuthContext);
   const toast = useToast();
-  const [items, setItems] = React.useState<CartItem[]>(() => {
-    try { return JSON.parse(localStorage.getItem('cart') || '[]'); } catch { return []; }
-  });
+  const [items, setItems] = React.useState<CartItem[]>([]);
+
+  // hydrate cart from localStorage on the client only
+  React.useEffect(() => {
+    try { const raw = localStorage.getItem('cart'); if (raw) setItems(JSON.parse(raw)); } catch { /* ignore */ }
+  }, []);
 
   React.useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(items));
+    try { localStorage.setItem('cart', JSON.stringify(items)); } catch { /* ignore */ }
   }, [items]);
 
   // When token appears, sync with server
@@ -58,9 +61,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return () => { mounted = false; };
   }, [items]);
 
-  // `qty` is a delta (can be negative). Positive adds, negative subtracts.
+
   function add(itemId: string, qty = 1) {
-    // compute expected new quantity (best-effort) so we can pick the right toast
+   
     const existing = items.find(p => p.itemId === itemId);
     const expectedNewQty = existing ? existing.quantity + qty : qty;
 
@@ -69,7 +72,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (i) {
         const newQty = i.quantity + qty;
         if (newQty <= 0) {
-          // remove the item when quantity drops to zero or below
+      
           return prev.filter(p => p.itemId !== itemId);
         }
         return prev.map(p => p.itemId === itemId ? { ...p, quantity: newQty } : p);
@@ -77,7 +80,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (qty <= 0) return prev; // nothing to do
       return [...prev, { itemId, quantity: qty }];
     });
-    // optimistic UI: fetch item details so cart shows name/image immediately
+    
     api.fetchItem(itemId).then(item => {
       setItems(prev => prev.map(p => p.itemId === itemId ? { ...p, item } : p));
     }).catch(() => {});
@@ -85,7 +88,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       try { toast?.error({ title: 'Cart error', description: e.message || 'Failed to add to cart' }); } catch(_){ }
     });
 
-    // Show an appropriate toast depending on whether we added or subtracted
+    
     try {
       if (qty > 0) {
         toast?.success({ title: 'Added to cart', description: qty === 1 ? 'Product added' : `${qty} items added` });

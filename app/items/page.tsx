@@ -3,30 +3,31 @@ import React from 'react';
 import Layout from '../../components/Layout';
 import api from '../../lib/api';
 import ItemCard from '../../components/ItemCard';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 export default function ItemsPage(){
   const [items, setItems] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(false);
 
-  const searchParams = useSearchParams();
   const router = useRouter();
 
-  const q = searchParams?.get('q') || '';
-  const initialMin = searchParams?.get('minPrice') || '';
-  const initialMax = searchParams?.get('maxPrice') || '';
-  const initialAdded = searchParams?.get('addedAfter') || '';
+  // Use client-only URL parsing instead of useSearchParams to avoid SSR bailout.
+  const [q, setQ] = React.useState('');
+  const [minPrice, setMinPrice] = React.useState('');
+  const [maxPrice, setMaxPrice] = React.useState('');
+  const [addedAfter, setAddedAfter] = React.useState('');
 
-  const [minPrice, setMinPrice] = React.useState(initialMin);
-  const [maxPrice, setMaxPrice] = React.useState(initialMax);
-  const [addedAfter, setAddedAfter] = React.useState(initialAdded);
-
-  React.useEffect(()=>{
-    // keep local filter inputs in sync when URL changes
-    setMinPrice(initialMin);
-    setMaxPrice(initialMax);
-    setAddedAfter(initialAdded);
-  }, [initialMin, initialMax, initialAdded]);
+  React.useEffect(() => {
+    try {
+      const sp = new URL(window.location.href).searchParams;
+      setQ(sp.get('q') || '');
+      setMinPrice(sp.get('minPrice') || '');
+      setMaxPrice(sp.get('maxPrice') || '');
+      setAddedAfter(sp.get('addedAfter') || '');
+    } catch (e) {
+      // ignore on server or invalid URL
+    }
+  }, []);
 
   React.useEffect(()=>{
     setLoading(true);

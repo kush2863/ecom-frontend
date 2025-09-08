@@ -14,10 +14,14 @@ export const AuthContext = React.createContext({
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const toast = useToast();
-  const [user, setUser] = React.useState<User>(() => {
-    try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; }
-  });
-  const [token, setToken] = React.useState<string | null>(() => localStorage.getItem('token'));
+  // Initialize to safe defaults during SSR. Hydrate from localStorage on the client.
+  const [user, setUser] = React.useState<User>(null);
+  const [token, setToken] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    try { const raw = localStorage.getItem('user'); if (raw) setUser(JSON.parse(raw)); } catch { /* ignore */ }
+    try { const t = localStorage.getItem('token'); if (t) setToken(t); } catch { /* ignore */ }
+  }, []);
 
   React.useEffect(() => {
     if (user) localStorage.setItem('user', JSON.stringify(user));
